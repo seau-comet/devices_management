@@ -1,10 +1,10 @@
+
 import 'package:devices_management/constants/hive_box.dart';
 import 'package:devices_management/models/device.dart';
 import 'package:devices_management/models/borrower.dart';
-import 'package:devices_management/services/local_database_service.dart';
-import 'package:devices_management/widgets/display_box_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 class AddPage extends StatelessWidget {
   AddPage({super.key});
@@ -15,7 +15,7 @@ class AddPage extends StatelessWidget {
     final isDevice = ModalRoute.of(context)!.settings.arguments as bool;
     return Scaffold(
       appBar: AppBar(
-        title: Text(isDevice ? "Add Device" : "Add Borrower"),
+        title: Text(isDevice ? "Add Device" : "Add User"),
       ),
       body: Container(
         padding: const EdgeInsets.all(24.0),
@@ -26,39 +26,51 @@ class AddPage extends StatelessWidget {
             TextFormField(
               controller: nameController,
               decoration: InputDecoration(
-                label: Text(isDevice ? "Device name" : "Borrower name"),
+                label: Text(isDevice ? "Device name" : "Username"),
               ),
             ),
-            // display list of devices when navigate as add device
-            if (isDevice)
+            if (!isDevice)
               Expanded(
-                child: DisplayBoxWidget<Device>(
-                  hiveBox: HiveBox.devices,
-                  child: (context, index, device) {
-                    return ListTile(
-                      title: Text(device.name),
-                      onTap: null,
-                      onLongPress: () async {
-                        await LocalDatabaseService.instance
-                            .deleteAt<Device>(HiveBox.devices, index);
-                      },
+                child: ValueListenableBuilder<Box<Borrower>>(
+                  valueListenable: Hive.box<Borrower>(HiveBox.borrowers.name).listenable(),
+                  builder: (context, box, widget) {
+                    return Center(
+                      child: ListView.builder(
+                        itemCount: box.values.length,
+                        itemBuilder: (context, index) {
+                          Borrower borrower = box.values.toList()[index];
+                          return ListTile(
+                            title: Text(borrower.name),
+                            onTap: () {},
+                            onLongPress: () async {
+                              await box.deleteAt(index);
+                            },
+                          );
+                        },
+                      ),
                     );
                   },
                 ),
               ),
-            // display list of devices when navigate as add borrow
-            if (!isDevice)
+            if (isDevice)
               Expanded(
-                child: DisplayBoxWidget<Borrower>(
-                  hiveBox: HiveBox.borrowers,
-                  child: (context, index, borrower) {
-                    return ListTile(
-                      title: Text(borrower.name),
-                      onTap: null,
-                      onLongPress: () async {
-                        await LocalDatabaseService.instance
-                            .deleteAt<Borrower>(HiveBox.borrowers, index);
-                      },
+                child: ValueListenableBuilder<Box<Device>>(
+                  valueListenable: Hive.box<Device>(HiveBox.devices.name).listenable(),
+                  builder: (context, box, widget) {
+                    return Center(
+                      child: ListView.builder(
+                        itemCount: box.values.length,
+                        itemBuilder: (context, index) {
+                          Device device = box.values.toList()[index];
+                          return ListTile(
+                            title: Text(device.name),
+                            onTap: () {},
+                            onLongPress: () async {
+                              await box.deleteAt(index);
+                            },
+                          );
+                        },
+                      ),
                     );
                   },
                 ),
@@ -76,16 +88,15 @@ class AddPage extends StatelessWidget {
                 }
                 if (isDevice) {
                   // add device
-                  await LocalDatabaseService.instance.add<Device>(
-                      HiveBox.devices, Device(nameController.text, null));
+                  final box = Hive.box<Device>(HiveBox.devices.name);
+                  await box.add(Device(nameController.text, null));
                 } else {
                   // add borrow
-                  await LocalDatabaseService.instance.add<Borrower>(
-                      HiveBox.borrowers,
-                      Borrower(nameController.text,
-                          DateTime.now().millisecond.toString()));
+                  final box = Hive.box<Borrower>(HiveBox.borrowers.name);
+                  await box.add(Borrower(nameController.text,
+                      DateTime.now().millisecond.toString()));
                 }
-          
+
                 nameController.clear();
                 Fluttertoast.showToast(msg: "added!");
               },

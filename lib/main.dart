@@ -1,15 +1,28 @@
-import 'package:devices_management/constants/route_path.dart';
+import 'package:devices_management/constants/hive_box.dart';
+import 'package:devices_management/models/borrower.dart';
+import 'package:devices_management/models/device.dart';
 import 'package:devices_management/pages/add_page.dart';
 import 'package:devices_management/pages/device_page.dart';
 import 'package:devices_management/pages/reserve_page.dart';
-import 'package:devices_management/services/local_database_service.dart';
 import 'package:devices_management/services/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 Future<void> main() async {
-  // initialize local database
-  await LocalDatabaseService.instance.initialize();
+  // initialize hive
+  // Already called WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+  // register adapters
+  Hive.registerAdapter(DeviceAdapter());
+  Hive.registerAdapter(BorrowerAdapter());
+  // open boxes
+  await Future.wait(
+    [
+      Hive.openBox<Device>(HiveBox.devices.name),
+      Hive.openBox<Borrower>(HiveBox.borrowers.name),
+    ],
+  );
   // create object FlutterLocalNotificationsPlugin
   final localNotification = FlutterLocalNotificationsPlugin();
   // inject FlutterLocalNotificationsPlugin and set up notification service
@@ -28,12 +41,11 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
       ),
       routes: {
-        RoutePath.home: (context) => const DevicesPage(),
-        RoutePath.reserve: (context) => const ReservePage(),
-        RoutePath.add: (context) => AddPage(),
+        "/home": (context) => const DevicesPage(),
+        "/reserve": (context) => const ReservePage(),
+        "/add": (context) => AddPage(),
       },
-      initialRoute: RoutePath.home,
-      debugShowCheckedModeBanner: false,
+      initialRoute: "/home",
     );
   }
 }
