@@ -16,7 +16,7 @@ class NotificationService {
   Future<void> setup(FlutterLocalNotificationsPlugin localNotification) async {
     _localNotifications = localNotification;
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings("");
+        AndroidInitializationSettings("@mipmap/ic_launcher");
     // request ios permission
     const initializationSettingsIOS = DarwinInitializationSettings(
         requestSoundPermission: true,
